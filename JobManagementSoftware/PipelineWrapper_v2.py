@@ -68,7 +68,10 @@ def run():
 #     multVarNorm="1"
 #     multVarCancer="1"
 #     print "dependencies:", dep
-    cancerFASTQ1=options.cancerFASTQ1, cancerFASTQ2=options.cancerFASTQ2, normalFASTQ1=options.normalFASTQ1, normalFASTQ2=options.normalFASTQ2,
+    cancerFASTQ1=options.cancerFASTQ1
+    cancerFASTQ2=options.cancerFASTQ2
+    normalFASTQ1=options.normalFASTQ1
+    normalFASTQ2=options.normalFASTQ2
 #     previousNormalDep, previousCancerDep=newPatient.addMultipleFASTQs(multVarNorm, multVarCancer, isPersonalis=False, dependencies=[])
     
     
