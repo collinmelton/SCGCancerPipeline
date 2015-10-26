@@ -103,8 +103,8 @@ def run():
     newPatient.addCREST(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
      
     # find CNVs
-#     newPatient.addExomeCNV(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
-    newPatient.addExomeCNV(previousNormalDep=[], previousCancerDep=[])
+    newPatient.addExomeCNV(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
+#     newPatient.addExomeCNV(previousNormalDep=[], previousCancerDep=[])
 
     # generate csv file and run pipeline
     newPatient.run()
