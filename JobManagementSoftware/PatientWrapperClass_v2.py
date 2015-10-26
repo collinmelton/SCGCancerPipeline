@@ -69,9 +69,9 @@ class Patient():
     
     # convert bam to fastq
     def bamToFastq(self, cancerBam, cancerFastqR1, cancerFastqR2, normalBam, normalFastqR1, normalFastqR2, dependencies=[]):
-        self.writeJob("tofastq_cancer", "150:00:00", "12", "$JAVAPATH -jar /srv/gsfs0/software/picard-tools/1.92/SamToFastq.jar INPUT=$1 FASTQ=$2 SECOND_END_FASTQ=$3", 
+        self.writeJob("tofastq_cancer", "150:00:00", "12", "JAVAPATH -jar /srv/gsfs0/software/picard-tools/1.92/SamToFastq.jar INPUT=$1 FASTQ=$2 SECOND_END_FASTQ=$3", 
                       [cancerBam, cancerFastqR1, cancerFastqR2], dependencies=dependencies)
-        self.writeJob("tofastq_normal", "150:00:00", "12", "$JAVAPATH java -jar /srv/gsfs0/software/picard-tools/1.92/SamToFastq.jar INPUT=$1 FASTQ=$2 SECOND_END_FASTQ=$3", 
+        self.writeJob("tofastq_normal", "150:00:00", "12", "JAVAPATH java -jar /srv/gsfs0/software/picard-tools/1.92/SamToFastq.jar INPUT=$1 FASTQ=$2 SECOND_END_FASTQ=$3", 
                       [normalBam, normalFastqR1, normalFastqR2], dependencies=dependencies)
         # return names of last jobs to be run
         return ["tofastq_cancer"], ["tofastq_normal"]
