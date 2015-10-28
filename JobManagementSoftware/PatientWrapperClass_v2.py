@@ -32,7 +32,7 @@ class Patient():
                  notes="", outputPath="", multiplicity="", scriptPath="", scriptOutputFileDirectory="",
                  scriptErrorFileDirectory="", scriptCustomizations="#", scriptEmailAddress="", dependencies=[]):
         if outputPath=="": outputPath=self.outputDirectory
-        if scriptPath=="": scriptPath=self.outputDirectory+"/scripts/"#+scriptName+".sh"
+        if scriptPath=="": scriptPath=self.outputDirectory+"/scripts/"+scriptName+".sh"
         if scriptOutputFileDirectory=="": scriptOutputFileDirectory= self.outputDirectory+"/error_and_outputs"
         if scriptErrorFileDirectory=="": scriptErrorFileDirectory= self.outputDirectory+"/error_and_outputs"
         if scriptEmailAddress=="": scriptEmailAddress=self.emailAddress
