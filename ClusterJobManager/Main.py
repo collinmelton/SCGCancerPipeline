@@ -28,41 +28,33 @@ def JobsRemain(JobsDict):
 #         job=JobsDict[jobName]
 #         job.updateStatus()
 
-def CheckForNewJobs(JobsDict, grid, csvFolder, jobinfofiles, variablesFile, JobVariables):
-    files =  os.listdir(csvFolder)
-    newfiles = [f for f in files if (".csv" in f and f not in jobinfofiles and ".temp" not in f)]
-    jobinfofiles=list(set(jobinfofiles+newfiles))
-    for f in newfiles:
-        try: 
-            newDict=parsePipelineInfoFile(os.path.join(csvFolder, f), variablesFile, grid, JobVariables=JobVariables)
-            for key in newDict: JobsDict[key]=newDict[key]
-        except: print "error parsing file:", f
-    return JobsDict, jobinfofiles
+# parse jobs file
+def CheckForNewJobs(JobsDict, grid, csvFile, variablesFile, JobVariables):
+    try: 
+        newDict=parsePipelineInfoFile(csvFile, variablesFile, grid, JobVariables=JobVariables)
+        for key in newDict: JobsDict[key]=newDict[key]
+    except: print "error parsing file:", csvFile
+    return JobsDict
 
-# writes status to dictionary in pickle file
-def WriteStatus(JobsDict, statusFolder):
-    StatusDict={}
-    for job in JobsDict:
-        StatusDict[job]=JobsDict[job].status
-    pickle.dump(StatusDict, open(os.path.join(statusFolder, "status.pickle"), "w"))
+# check if any jobs remain, T if yes, F if now
+def jobsRemain(JobsDict):
+    for job in JobsDict.values():
+        if not job.started: return True
+    return False
 
 # run all jobs until none remain
-def RunJobs(JobsDict, grid, csvFolder, statusFolder, variablesFile, JobVariables):
-    jobinfofiles=[]
-    # forever check if jobs are ready and start them
-    while True:
-        # add new jobs if they exist
-        JobsDict, jobinfofiles = CheckForNewJobs(JobsDict, grid, csvFolder, jobinfofiles, variablesFile, JobVariables)
-        # update Jobs Dict with newly completed Jobs
-        grid.updateJobDict(JobsDict)
+def RunJobs(JobsDict, grid, csvFile, statusFolder, variablesFile, JobVariables):
+    # add new jobs if they exist
+    JobsDict = CheckForNewJobs(JobsDict, grid, csvFile, variablesFile, JobVariables)
+    # update Jobs Dict with newly completed Jobs
+    grid.updateJobDict(JobsDict)
+    while jobsRemain(JobsDict):
         # start jobs that are ready
         for jobName in JobsDict:
             job=JobsDict[jobName]
             if job.readyToRun(JobsDict) and not job.started:
                 job.start()
                 print job.name, job.started
-        # write status to pickle file
-        WriteStatus(JobsDict, statusFolder)
         # wait before checking on jobs to run
         time.sleep(30)
         
@@ -73,7 +65,7 @@ def getOptions():
                       metavar = "FILE", type = "string", default = "/srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/SharedSoftware/JobManagementSoftware/Variables.csv")
     parser.add_option("--L", dest = "logFileFilePath", help = "path/name of log file to be output"+
                       "concurrently", metavar = "FILE", default = "logFileTest.txt", type = "string")
-    parser.add_option("--C", dest = "csvFolder", help = "", metavar = "FILE", default = "/srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/CODESPatientData/JobCSVFiles", type = "string")
+    parser.add_option("--C", dest = "csvFile", help = "", metavar = "FILE", default = "/srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/CODESPatientData/JobCSVFiles", type = "string")
     parser.add_option("--IF", dest = "inputFolder", help = "", metavar = "FILE", default = "/srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/CODESPatientData/InputFiles", type = "string")
     parser.add_option("--OF", dest = "outputFolder", help = "", metavar = "FILE", default = "/srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/CODESPatientData/OutputFiles", type = "string")
     parser.add_option("--SF", dest = "statusFolder", help = "", metavar = "FILE", default = "/srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/CODESPatientData/StatusFiles", type = "string")
@@ -103,7 +95,7 @@ def run():
                       "$ScriptPath": options.jobScriptFolder}
     
         # run all jobs        
-        RunJobs(JobsDict, grid, options.csvFolder, options.statusFolder, options.VariablesFile, JobVariables)
+        RunJobs(JobsDict, grid, options.csvFile, options.statusFolder, options.VariablesFile, JobVariables)
 
     finally:
         # exit drmaa session
