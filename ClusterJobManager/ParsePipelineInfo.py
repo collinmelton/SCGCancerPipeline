@@ -56,7 +56,7 @@ def parsePipelineInfoFile(filename, variablesFile, grid, JobVariables={}):
                 # create new subtask for each multiplicity
                 newMSubtask={}
                 for key in newSubTask.keys():
-                    newMSubtask[key]=newSubTask[key].replace("$MULTIPLICITYVAR_FORFILE", m.replace(" ", "_")).replace("$MULTIPLICITYVAR", m).replace("$PATIENTID", newSubTask["patientID"]).replace("\\n", "\n")
+                    newMSubtask[key]=newSubTask[key].replace("$MULTIPLICITYVAR_FORFILE", m.replace(" ", "_")).replace("$MULTIPLICITYVAR", m).replace("$PATIENTID", newSubTask["patientID"]).replace("$OUTPUTPATH", newSubTask["outputPath"]).replace("\\n", "\n")
                 if m!="":
                     newMSubtask["scriptName"]=(newMSubtask["scriptName"]+"_"+m).replace(" ", "_")
                 else:
