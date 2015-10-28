@@ -45,6 +45,7 @@ class Job(object):
     def createJob(self, scriptPath, args):
         self.jobTemplate = self.grid.drmaaSession.createJobTemplate()
         self.jobTemplate.remoteCommand = scriptPath
+        print "writing script", scriptPath
         self.jobTemplate.args = args
         # the -b no option tells sge to not read the command as a binary file,
         # this means all the sge commented out options will be read, default is -b yes
@@ -52,6 +53,7 @@ class Job(object):
         
     # this method rus the jobtemplate object
     def runJob(self):
+        print "starting job"
         self.grid.startJob(self.jobTemplate, self.name)
 
     # this method marks the jobevent complete
