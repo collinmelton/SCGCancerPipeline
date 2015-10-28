@@ -34,6 +34,10 @@ def getOptions():
                       metavar = "STRING", default = "cancer", type = "string")
     parser.add_option("--NID", dest = "normalID", help = "",
                       metavar = "STRING", default = "normal", type = "string")
+    parser.add_option("--NL", dest = "normalLoc", help = "",
+                      metavar = "STRING", default = "", type = "string")
+    parser.add_option("--RN", dest = "runNormals", help = "",
+                      metavar = "STRING", default = "T", type = "string")
     (options, args) = parser.parse_args()
     return options
 
@@ -85,7 +89,8 @@ def run():
     previousNormalDep, previousCancerDep=newPatient.addMultipleFASTQs(multVarNorm, multVarCancer, cancerFASTQ1=cancerFASTQ1, 
                                                                       cancerFASTQ2=cancerFASTQ2, normalFASTQ1=normalFASTQ1, 
                                                                       normalFASTQ2=normalFASTQ2, isPersonalis=False, 
-                                                                      dependencies=previousNormalDep+previousCancerDep)
+                                                                      dependencies=previousNormalDep+previousCancerDep, 
+                                                                      runNormals=(options.runNormals=="T"), normalLoc=options.normalLoc)
     
 #     # start here if data come aligned
 #     

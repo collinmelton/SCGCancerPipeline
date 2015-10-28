@@ -81,33 +81,36 @@ class Patient():
                           cancerFASTQ1="$OUTPUTPATH/$PATIENTID_R1_$MULTIPLICITYVAR_FORFILE.cancer.fastq", 
                           cancerFASTQ2="$OUTPUTPATH/$PATIENTID_R2_$MULTIPLICITYVAR_FORFILE.cancer.fastq", 
                           normalFASTQ1="$OUTPUTPATH/$PATIENTID_R1_$MULTIPLICITYVAR_FORFILE.normal.fastq", 
-                          normalFASTQ2="$OUTPUTPATH/$PATIENTID_R2_$MULTIPLICITYVAR_FORFILE.normal.fastq", isPersonalis=False, dependencies=[]):
+                          normalFASTQ2="$OUTPUTPATH/$PATIENTID_R2_$MULTIPLICITYVAR_FORFILE.normal.fastq", 
+                          isPersonalis=False, dependencies=[], runNormals=True, normalLoc=""):
         
         newdependencies = []
-        for fastq in [cancerFASTQ1, cancerFASTQ2, normalFASTQ1, normalFASTQ2]:
+        if runNormals: fastqs = [cancerFASTQ1, cancerFASTQ2, normalFASTQ1, normalFASTQ2]
+        else: fastqs = [cancerFASTQ1, cancerFASTQ2]
+        for fastq in fastqs:
             print fastq
             if fastq[-3:]==".gz": # or ".gz" in fastq:
                 self.writeJob("unzip_"+fastq.split("/")[-1].split(".")[0], "6:00:00", "4", "gunzip -c $1 > $2", [fastq, fastq[:-3]], dependencies=dependencies)
                 newdependencies.append("unzip_"+fastq.split("/")[-1].split(".")[0])
         
-        # still some problem here with dependencies
-        self.writeJob("bwa_normal", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
-                      [normalFASTQ1, normalFASTQ2, "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam"], 
-                      dependencies=newdependencies, multiplicity="")
+        if runNormals:
+            self.writeJob("bwa_normal", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
+                          [normalFASTQ1, normalFASTQ2, "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam"], 
+                          dependencies=newdependencies, multiplicity="")
         self.writeJob("bwa_cancer", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
                       [cancerFASTQ1, cancerFASTQ2, "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam"], 
                       dependencies=newdependencies, multiplicity="")
         if isPersonalis:
-             
-            normalScriptNames=[]
-            for m in multVarNorm.split("|"):
-                vals=m.split("_")
-                rgid, rglb, rgpl, rgpu, rgsm= vals[0], vals[2]+"_"+vals[3], "illumina", vals[2], vals[1]  # id, library (barcode?), platform, platform unit (barcode),   
-                scriptName="addReadGroup"+"_normal_"+m
-                normalScriptNames.append(scriptName)
-                self.writeJob(scriptName, "100:00:00", "8", "JAVAPATH -Xmx2g -jar PICARDPATH/AddOrReplaceReadGroups.jar INPUT=$1 OUTPUT=$2 RGID=$3 RGLB=$4 RGPL=$5 RGPU=$6 RGSM=$7 VALIDATION_STRINGENCY=LENIENT",
-                      ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.bam",rgid,rglb,rgpl,rgpu,rgsm], 
-                      dependencies=["bwa_normal"], multiplicity=m)
+            if runNormals:
+                normalScriptNames=[]
+                for m in multVarNorm.split("|"):
+                    vals=m.split("_")
+                    rgid, rglb, rgpl, rgpu, rgsm= vals[0], vals[2]+"_"+vals[3], "illumina", vals[2], vals[1]  # id, library (barcode?), platform, platform unit (barcode),   
+                    scriptName="addReadGroup"+"_normal_"+m
+                    normalScriptNames.append(scriptName)
+                    self.writeJob(scriptName, "100:00:00", "8", "JAVAPATH -Xmx2g -jar PICARDPATH/AddOrReplaceReadGroups.jar INPUT=$1 OUTPUT=$2 RGID=$3 RGLB=$4 RGPL=$5 RGPU=$6 RGSM=$7 VALIDATION_STRINGENCY=LENIENT",
+                          ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.bam",rgid,rglb,rgpl,rgpu,rgsm], 
+                          dependencies=["bwa_normal"], multiplicity=m)
                      
             cancerScriptNames=[]
             for m in multVarCancer.split("|"):
@@ -121,66 +124,80 @@ class Patient():
         else:
             normalScriptNames=["addReadGroup_normal"]
             cancerScriptNames=["addReadGroup_cancer"]
-            self.writeJob("addReadGroup_normal", "100:00:00", "8", "JAVAPATH -Xmx2g -jar PICARDPATH/AddOrReplaceReadGroups.jar INPUT=$1 OUTPUT=$2 RGID=$3 RGLB=$4 RGPL=$5 RGPU=$6 RGSM=$7 VALIDATION_STRINGENCY=LENIENT",
-                      ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.bam","$PATIENTID","$MULTIPLICITYVAR_FORFILE", "Illumina","$PATIENTID","normal"], 
-                      dependencies=["bwa_normal"], multiplicity=multVarNorm)
+            if runNormals:
+                self.writeJob("addReadGroup_normal", "100:00:00", "8", "JAVAPATH -Xmx2g -jar PICARDPATH/AddOrReplaceReadGroups.jar INPUT=$1 OUTPUT=$2 RGID=$3 RGLB=$4 RGPL=$5 RGPU=$6 RGSM=$7 VALIDATION_STRINGENCY=LENIENT",
+                          ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.bam","$PATIENTID","$MULTIPLICITYVAR_FORFILE", "Illumina","$PATIENTID","normal"], 
+                          dependencies=["bwa_normal"], multiplicity=multVarNorm)
             self.writeJob("addReadGroup_cancer", "100:00:00", "8", "JAVAPATH -Xmx2g -jar PICARDPATH/AddOrReplaceReadGroups.jar INPUT=$1 OUTPUT=$2 RGID=$3 RGLB=$4 RGPL=$5 RGPU=$6 RGSM=$7 VALIDATION_STRINGENCY=LENIENT",
                       ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.bam","$PATIENTID|$MULTIPLICITYVAR_FORFILE","Illumina","$PATIENTID","cancer"], 
                       dependencies=["bwa_cancer"], multiplicity=multVarCancer)
         
         # sort normal and cancer
-        self.writeJob("sort_normal_1", "48:00:00", "14", "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
-                      ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.sorted.bam"], 
-                      dependencies=normalScriptNames, multiplicity=multVarNorm)
+        if runNormals:
+            self.writeJob("sort_normal_1", "48:00:00", "14", "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
+                          ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.sorted.bam"], 
+                          dependencies=normalScriptNames, multiplicity=multVarNorm)
         self.writeJob("sort_cancer_1", "48:00:00", "14", "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
                       ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.sorted.bam"], 
                       dependencies=cancerScriptNames, multiplicity=multVarCancer)
          
         # index normal and cancer
-        self.writeJob("index_normal_1", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
-                      ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.sorted.bam"], 
-                      dependencies=["sort_normal_1"], multiplicity=multVarNorm)
+        if runNormals:
+            self.writeJob("index_normal_1", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
+                          ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.sorted.bam"], 
+                          dependencies=["sort_normal_1"], multiplicity=multVarNorm)
         self.writeJob("index_cancer_1", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
                       ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.sorted.bam"], 
                       dependencies=["sort_cancer_1"], multiplicity=multVarCancer)
                  
         # merge
-        self.writeJob("merge_normal_1", "48:00:00", "12", 
-                      "JAVAPATH -Xmx2g -jar PICARDPATH/MergeSamFiles.jar "+" ".join(map(lambda x: "INPUT=${"+str(x+1)+"}", range(len(multVarNorm.split("|")))))+" OUTPUT=${"+str(len(multVarNorm.split("|"))+1)+"} VALIDATION_STRINGENCY=LENIENT USE_THREADING=true  ",
-                      ("|".join(map(lambda x: "$OUTPUTPATH/$PATIENTID."+x+".normal.RG.sorted.bam", multVarNorm.split("|")))+"|$OUTPUTPATH/$PATIENTID.merged.normal.RG.bam").split("|"), 
-                      dependencies=["index_normal_1"])
+        if runNormals:
+            self.writeJob("merge_normal_1", "48:00:00", "12", 
+                          "JAVAPATH -Xmx2g -jar PICARDPATH/MergeSamFiles.jar "+" ".join(map(lambda x: "INPUT=${"+str(x+1)+"}", range(len(multVarNorm.split("|")))))+" OUTPUT=${"+str(len(multVarNorm.split("|"))+1)+"} VALIDATION_STRINGENCY=LENIENT USE_THREADING=true  ",
+                          ("|".join(map(lambda x: "$OUTPUTPATH/$PATIENTID."+x+".normal.RG.sorted.bam", multVarNorm.split("|")))+"|$OUTPUTPATH/$PATIENTID.merged.normal.RG.bam").split("|"), 
+                          dependencies=["index_normal_1"])
         self.writeJob("merge_cancer_1", "48:00:00", "12", 
                       "JAVAPATH -Xmx2g -jar PICARDPATH/MergeSamFiles.jar "+" ".join(map(lambda x: "INPUT=${"+str(x+1)+"}", range(len(multVarCancer.split("|")))))+" OUTPUT=${"+str(len(multVarCancer.split("|"))+1)+"} VALIDATION_STRINGENCY=LENIENT USE_THREADING=true  ",
                       ("|".join(map(lambda x: "$OUTPUTPATH/$PATIENTID."+x+".cancer.RG.sorted.bam", multVarCancer.split("|")))+"|$OUTPUTPATH/$PATIENTID.merged.cancer.RG.bam").split("|"), 
                       dependencies=["index_cancer_1"])
          
         # sort normal and cancer
-        self.writeJob("sort_normal_2", "48:00:00", "14", 
-                      "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
-                      ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.bam","$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.bam"], 
-                      dependencies=["merge_normal_1"])
+        if runNormals:
+            self.writeJob("sort_normal_2", "48:00:00", "14", 
+                          "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
+                          ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.bam","$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.bam"], 
+                          dependencies=["merge_normal_1"])
         self.writeJob("sort_cancer_2", "48:00:00", "14", 
                       "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
                       ["$OUTPUTPATH/$PATIENTID.merged.cancer.RG.bam","$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.bam"], 
                       dependencies=["merge_cancer_1"])
          
         # index normal and cancer
-        self.writeJob("index_normal_2", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
-                      ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.bam"], 
-                      dependencies=["sort_normal_2"])
+        if runNormals:
+            self.writeJob("index_normal_2", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
+                          ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.bam"], 
+                          dependencies=["sort_normal_2"])
         self.writeJob("index_cancer_2", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
                       ["$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.bam"], 
                     dependencies=["sort_cancer_2"])
         
         # mark duplicates for cancer and normal
-        self.writeJob("mark_dup_normal_1", "150:00:00", "32", 
-                      "JAVAPATH -Xmx24g -jar PICARDPATH/MarkDuplicates.jar INPUT=$1 OUTPUT=$2 METRICS_FILE=$3 VALIDATION_STRINGENCY=LENIENT",
-                      ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.bam","$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam","$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.metrics.txt"], 
-                      dependencies=["index_normal_2"])
+        if runNormals:
+            self.writeJob("mark_dup_normal_1", "150:00:00", "32", 
+                          "JAVAPATH -Xmx24g -jar PICARDPATH/MarkDuplicates.jar INPUT=$1 OUTPUT=$2 METRICS_FILE=$3 VALIDATION_STRINGENCY=LENIENT",
+                          ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.bam","$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam","$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.metrics.txt"], 
+                          dependencies=["index_normal_2"])
         self.writeJob("mark_dup_cancer_1", "150:00:00", "32", 
                       "JAVAPATH -Xmx24g -jar PICARDPATH/MarkDuplicates.jar INPUT=$1 OUTPUT=$2 METRICS_FILE=$3 VALIDATION_STRINGENCY=LENIENT",
                       ["$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.bam","$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.bam","$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.metrics.txt"], 
                       dependencies=["index_cancer_2"])        
+
+        # if not run normals tranfer normal file over
+        if not runNormals and normalLoc!="":
+            self.writeJob("copyNormal", "12:00:00", "2", "cp $1 > $2",
+                      [normalLoc, "$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.bam"], 
+                      dependencies=[])
+        
         # index normal and cancer
         self.writeJob("index_normal_3", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
                       ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam"], 
@@ -191,6 +208,7 @@ class Patient():
         
         # return names of last jobs to be run
         return ["index_normal_3"], ["index_cancer_3"]
+
    
     # run local realignment and base recalibration
     def addRealignmentAndRecal(self, previousNormalDep=[], previousCancerDep=[]):
