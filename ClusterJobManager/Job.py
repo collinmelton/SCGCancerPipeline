@@ -16,6 +16,12 @@ class pipelineJob(Job):
         self.failed = False
         self.status = None
     
+    def __str__(self):
+        return self.name+", dependencies: " + ", ".join(map(str, self.dependencies))
+    
+    def __repr__(self):
+        return str(self)
+    
     # update job status
     def updateStatus(self, status):
         self.status = status
