@@ -59,7 +59,7 @@ class pipelineJob(Job):
             print depName
             if depName in dependencyDict:
                 self.dependencies=self.dependencies+dependencyDict[depName]
-        print self.name+": "+", ".join(self.dependencies)
+#         print self.name+": "+", ".join(self.dependencies)
     
     # start the job
     def start(self):

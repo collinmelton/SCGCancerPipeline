@@ -84,28 +84,28 @@ def run():
     previousNormalDep, previousCancerDep=[],[]
     previousNormalDep, previousCancerDep=newPatient.addMultipleFASTQs(multVarNorm, multVarCancer, isPersonalis=False, dependencies=previousNormalDep+previousCancerDep)
     
-# #     # start here if data come aligned
-# #     
-# 
-#     # run local realignment and base recalibration
-#     previousNormalDep, previousCancerDep=newPatient.addRealignmentAndRecal(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
-#          
-#     # find germline snvs, also run on cancer to do quality check on shared snvs
-#     newPatient.addGermlineSNVsAndQualityCheck(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
-#   
-#         
-#     # find somatic snvs and indels and annotate them
-#     newPatient.addMutectAndVarscan2(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
-#        
-# #     # find copy number alterations and annotate them
-# #     newPatient.addBicseq("low", previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
-#        
-#     # find rearrangements and other somatic structural variants
-#     newPatient.addCREST(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
-#      
-#     # find CNVs
-#     newPatient.addExomeCNV(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
-# #     newPatient.addExomeCNV(previousNormalDep=[], previousCancerDep=[])
+#     # start here if data come aligned
+#     
+ 
+    # run local realignment and base recalibration
+    previousNormalDep, previousCancerDep=newPatient.addRealignmentAndRecal(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
+          
+    # find germline snvs, also run on cancer to do quality check on shared snvs
+    newPatient.addGermlineSNVsAndQualityCheck(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
+   
+         
+    # find somatic snvs and indels and annotate them
+    newPatient.addMutectAndVarscan2(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
+        
+#     # find copy number alterations and annotate them
+#     newPatient.addBicseq("low", previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
+        
+    # find rearrangements and other somatic structural variants
+    newPatient.addCREST(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
+      
+    # find CNVs
+    newPatient.addExomeCNV(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
+#     newPatient.addExomeCNV(previousNormalDep=[], previousCancerDep=[])
 
     # generate csv file and run pipeline
     newPatient.run()
