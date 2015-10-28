@@ -56,10 +56,10 @@ class pipelineJob(Job):
         for dep in self.jobInfoDict["dependencies"].split("|"):
 #             depName=dep
             depName=(self.jobInfoDict["filename"].split("/")[-1].split(".")[0]+"_pat_"+self.jobInfoDict["patientID"]+"_"+dep)
-            print depName
+            if "unzip" in self.name: print depName
             if depName in dependencyDict:
                 self.dependencies=self.dependencies+dependencyDict[depName]
-#         print self.name+": "+", ".join(self.dependencies)
+        if "unzip" in self.name: print self.name+": "+", ".join(self.dependencies)
     
     # start the job
     def start(self):
