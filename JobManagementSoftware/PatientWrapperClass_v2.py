@@ -85,7 +85,8 @@ class Patient():
         
         newdependencies = []
         for fastq in [cancerFASTQ1, cancerFASTQ2, normalFASTQ1, normalFASTQ2]:
-            if fastq[-3:]==".gz":
+            print fastq
+            if fastq[-3:]==".gz" or ".gz" in fastq:
                 self.writeJob("unzip_"+fastq.split("/")[-1], "6:00:00", "4", "gunzip -c $1 > $2", [fastq, fastq[:-3]], dependencies=dependencies)
                 newdependencies+="unzip_"+fastq.split("/")[-1]
         self.writeJob("bwa_normal", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
