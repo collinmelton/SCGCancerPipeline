@@ -47,7 +47,8 @@ def RunJobs(JobsDict, grid, csvFile, statusFolder, variablesFile, JobVariables):
     # add new jobs if they exist
     JobsDict = CheckForNewJobs(JobsDict, grid, csvFile, variablesFile, JobVariables)
     # update Jobs Dict with newly completed Jobs
-    print JobsDict
+    for job in JobsDict:
+        print job, JobsDict[job]
     return
     grid.updateJobDict(JobsDict)
     while jobsRemain(JobsDict):

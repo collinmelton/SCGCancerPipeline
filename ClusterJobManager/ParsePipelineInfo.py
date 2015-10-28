@@ -69,5 +69,5 @@ if __name__ == "__main__":
     grid = GridEngine("test")
     getVariablesDict("/Users/cmelton/Documents/Aptana Studio 3 Workspace/CancerPipeline/Variables.csv")
     Jobs= parsePipelineInfoFile("/Users/cmelton/Documents/Aptana Studio 3 Workspace/CancerPipelineSharedCode/JobManagementSoftware/v2jobfiletest.csv", "/Users/cmelton/Documents/Aptana Studio 3 Workspace/CancerPipelineSharedCode/JobManagementSoftware/Variables.csv", grid)
-    for job in Jobs:
-        print Jobs[job].name
+#     for job in Jobs:
+#         print Jobs[job].name
