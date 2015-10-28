@@ -57,7 +57,10 @@ def parsePipelineInfoFile(filename, variablesFile, grid, JobVariables={}):
                 newMSubtask={}
                 for key in newSubTask.keys():
                     newMSubtask[key]=newSubTask[key].replace("$MULTIPLICITYVAR_FORFILE", m.replace(" ", "_")).replace("$MULTIPLICITYVAR", m).replace("$PATIENTID", newSubTask["patientID"]).replace("\\n", "\n")
-                newMSubtask["scriptName"]=(newMSubtask["scriptName"]+"_"+m).replace(" ", "_")
+                if m!="":
+                    newMSubtask["scriptName"]=(newMSubtask["scriptName"]+"_"+m).replace(" ", "_")
+                else:
+                    newMSubtask["scriptName"]=(newMSubtask["scriptName"]).replace(" ", "_")
                 Jobs[newMSubtask["scriptName"]]=pipelineJob(grid,newMSubtask) 
                 dependencyDict[newSubTask["scriptName"]].append(newMSubtask["scriptName"])
     for job in Jobs:
