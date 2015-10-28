@@ -49,6 +49,7 @@ def RunJobs(JobsDict, grid, csvFile, statusFolder, variablesFile, JobVariables):
     # update Jobs Dict with newly completed Jobs
     for job in JobsDict:
         print JobsDict[job]
+    return
     grid.updateJobDict(JobsDict)
     while jobsRemain(JobsDict):
         # start jobs that are ready
