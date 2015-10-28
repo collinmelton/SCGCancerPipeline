@@ -59,8 +59,8 @@ def run():
 #     cid, nid =options.cancerID, options.normalID
 #     print cid, nid
 #     multVarNorm, multVarCancer, dep = newPatient.unzipPersonalis(FASTQDirs, gzippedFastqs, cid, nid, run=False) 
-    multVarNorm = "1|2"
-    multVarCancer  = "1|2"
+    multVarNorm = "" #"1|2"
+    multVarCancer  = "" #"1|2"
     
     print "multVarNorm:", multVarNorm
     print "multVarCancer:", multVarCancer
