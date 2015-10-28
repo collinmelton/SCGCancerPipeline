@@ -562,4 +562,6 @@ class Patient():
     def run(self):
         self.writeCSV()
         print os.path.isfile(self.csvFile)
-        subprocess.call("python /srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/SharedSoftware/JobManagementSoftware/Main_v2.py --I "+self.csvFile, shell=True)
+        subprocess.call("python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/ClusterJobManager/Main.py --C "+self.csvFile+" --V /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/JobManagementSoftware/Variables.csv"+" --L /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/JobManagementSoftware/logfile.txt"+ " --IF ''"+" --OF ''"+" --SF ''"+" --JEF ''"+" --JOF ''"+" --JSF ''", shell=True)
+#         subprocess.call("python /srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/SharedSoftware/JobManagementSoftware/Main_v2.py --I "+self.csvFile, shell=True)
+        
