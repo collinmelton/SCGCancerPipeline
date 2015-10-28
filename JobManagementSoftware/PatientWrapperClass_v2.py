@@ -90,10 +90,10 @@ class Patient():
                 newdependencies+="unzip_"+fastq.split("/")[-1]
         self.writeJob("bwa_normal", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
                       [normalFASTQ1, normalFASTQ2, "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam"], 
-                      dependencies=newdependencies, multiplicity=[])
+                      dependencies=newdependencies, multiplicity="")
         self.writeJob("bwa_cancer", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
                       [cancerFASTQ1, cancerFASTQ2, "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam"], 
-                      dependencies=newdependencies, multiplicity=[])
+                      dependencies=newdependencies, multiplicity="")
         if isPersonalis:
              
             normalScriptNames=[]
