@@ -78,13 +78,14 @@ def run():
     # convert bam to fastq
     
     # convert bams to fastq
-    previousNormalDep, previousCancerDep = newPatient.bamToFastq(options.cancerBam, cancerFASTQ1, cancerFASTQ2, options.normalBam, normalFASTQ1, normalFASTQ2, dependencies=[])
+#     previousNormalDep, previousCancerDep = newPatient.bamToFastq(options.cancerBam, cancerFASTQ1, cancerFASTQ2, options.normalBam, normalFASTQ1, normalFASTQ2, dependencies=[])
     
     # convert fastq to bam
+    previousNormalDep, previousCancerDep=[],[]
     previousNormalDep, previousCancerDep=newPatient.addMultipleFASTQs(multVarNorm, multVarCancer, isPersonalis=False, dependencies=previousNormalDep+previousCancerDep)
     
 #     # start here if data come aligned
-#     previousNormalDep, previousCancerDep=[],[]
+#     
 
     # run local realignment and base recalibration
     previousNormalDep, previousCancerDep=newPatient.addRealignmentAndRecal(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)

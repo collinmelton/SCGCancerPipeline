@@ -69,9 +69,9 @@ class Patient():
     
     # convert bam to fastq
     def bamToFastq(self, cancerBam, cancerFastqR1, cancerFastqR2, normalBam, normalFastqR1, normalFastqR2, dependencies=[]):
-        self.writeJob("tofastq_cancer", "150:00:00", "12", "JAVAPATH -Xmx3g -XX:-UseGCOverheadLimit -jar /srv/gsfs0/software/picard-tools/1.92/SamToFastq.jar INPUT=$1 FASTQ=$2 SECOND_END_FASTQ=$3", 
+        self.writeJob("tofastq_cancer", "150:00:00", "12", "JAVAPATH -Xmx8g -XX:-UseGCOverheadLimit -jar /srv/gsfs0/software/picard-tools/1.92/SamToFastq.jar INPUT=$1 FASTQ=$2 SECOND_END_FASTQ=$3", 
                       [cancerBam, cancerFastqR1, cancerFastqR2], dependencies=dependencies)
-        self.writeJob("tofastq_normal", "150:00:00", "12", "JAVAPATH -Xmx3g -XX:-UseGCOverheadLimit -jar /srv/gsfs0/software/picard-tools/1.92/SamToFastq.jar INPUT=$1 FASTQ=$2 SECOND_END_FASTQ=$3", 
+        self.writeJob("tofastq_normal", "150:00:00", "12", "JAVAPATH -Xmx8g -XX:-UseGCOverheadLimit -jar /srv/gsfs0/software/picard-tools/1.92/SamToFastq.jar INPUT=$1 FASTQ=$2 SECOND_END_FASTQ=$3", 
                       [normalBam, normalFastqR1, normalFastqR2], dependencies=dependencies)
         # return names of last jobs to be run
         return ["tofastq_cancer"], ["tofastq_normal"]
@@ -82,12 +82,18 @@ class Patient():
                           cancerFASTQ2="$OUTPUTPATH/$PATIENTID_R2_$MULTIPLICITYVAR_FORFILE.cancer.fastq", 
                           normalFASTQ1="$OUTPUTPATH/$PATIENTID_R1_$MULTIPLICITYVAR_FORFILE.normal.fastq", 
                           normalFASTQ2="$OUTPUTPATH/$PATIENTID_R2_$MULTIPLICITYVAR_FORFILE.normal.fastq", isPersonalis=False, dependencies=[]):
+        
+        newdependencies = []
+        for fastq in [cancerFASTQ1, cancerFASTQ2, normalFASTQ1, normalFASTQ2]:
+            if fastq[-3:]==".gz":
+                self.writeJob("unzip_"+fastq.split("/")[-1], "6:00:00", "4", "gunzip -c $1 > $2", [fastq, fastq[:-3]], dependencies=dependencies)
+                newdependencies+="unzip_"+fastq.split("/")[-1]
         self.writeJob("bwa_normal", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
                       [normalFASTQ1, normalFASTQ2, "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam"], 
-                      dependencies=dependencies, multiplicity=multVarNorm)
+                      dependencies=newdependencies, multiplicity=multVarNorm)
         self.writeJob("bwa_cancer", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
                       [cancerFASTQ1, cancerFASTQ2, "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam"], 
-                      dependencies=dependencies, multiplicity=multVarCancer)
+                      dependencies=newdependencies, multiplicity=multVarCancer)
         if isPersonalis:
              
             normalScriptNames=[]
