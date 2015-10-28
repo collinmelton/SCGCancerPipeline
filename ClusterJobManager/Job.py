@@ -54,8 +54,8 @@ class pipelineJob(Job):
     def setDependencies(self, dependencyDict):
         if self.jobInfoDict["dependencies"]=="": return
         for dep in self.jobInfoDict["dependencies"].split("|"):
-            depName=dep
-#             depName=(self.jobInfoDict["filename"].split("/")[-1]+"_pat_"+self.jobInfoDict["patientID"]+"_"+dep)
+#             depName=dep
+            depName=(self.jobInfoDict["filename"].split("/")[-1]+"_pat_"+self.jobInfoDict["patientID"]+"_"+dep)
             if depName in dependencyDict:
                 self.dependencies=self.dependencies+dependencyDict[depName]
         print self.name+": "+", ".join(self.dependencies)
