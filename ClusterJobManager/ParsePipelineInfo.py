@@ -16,7 +16,7 @@ def getVariablesDict(variablesFile):
 # eventually this should parse inputs from the JobInfoFile, to get information for each job,
 # right now I just return a dictionary object directly as a placeholder
 def parsePipelineInfoFile(filename, variablesFile, grid, JobVariables={}):
-    # replace global variable names
+    # replace global variable names in temp csv file
     variableReplacements=getVariablesDict(variablesFile)
     for key in JobVariables:
         variableReplacements[key]=JobVariables[key]
@@ -42,7 +42,7 @@ def parsePipelineInfoFile(filename, variablesFile, grid, JobVariables={}):
         newSubTask={}
         for i in range(0, min(len(header), len(row))):
             newSubTask[header[i]]=row[i].strip()
-        newSubTask["filename"]=filename
+        newSubTask["filename"]=newSubTask["scriptPath"].split("/")[-1]
 #         newSubTask["scriptName"]=newSubTask["scriptName"] #(filename.split("/")[-1].split(".")[0]+"_pat_"+newSubTask["patientID"]+"_"+newSubTask["scriptName"]).replace(" ", "_") # add patient id to scriptname to uniquely identify
 #         newSubTask["scriptPath"]=os.path.join(newSubTask["scriptPath"],newSubTask["scriptName"]+".sh") 
         dependencyDict[newSubTask["scriptName"]]=[] # make list for dependency names after splitting 
