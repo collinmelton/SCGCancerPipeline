@@ -82,7 +82,10 @@ def run():
     
     # convert fastq to bam
     previousNormalDep, previousCancerDep=[],[]
-    previousNormalDep, previousCancerDep=newPatient.addMultipleFASTQs(multVarNorm, multVarCancer, isPersonalis=False, dependencies=previousNormalDep+previousCancerDep)
+    previousNormalDep, previousCancerDep=newPatient.addMultipleFASTQs(multVarNorm, multVarCancer, cancerFASTQ1=cancerFASTQ1, 
+                                                                      cancerFASTQ2=cancerFASTQ2, normalFASTQ1=normalFASTQ1, 
+                                                                      normalFASTQ2=normalFASTQ2, isPersonalis=False, 
+                                                                      dependencies=previousNormalDep+previousCancerDep)
     
 #     # start here if data come aligned
 #     
