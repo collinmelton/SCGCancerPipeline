@@ -44,7 +44,7 @@ def parsePipelineInfoFile(filename, variablesFile, grid, JobVariables={}):
             newSubTask[header[i]]=row[i].strip()
         newSubTask["filename"]= filename#newSubTask["scriptPath"].split("/")[-1]
         #newSubTask["scriptName"] #
-        newSubTask["scriptName"]=(filename.split("/")[-1].split(".")[0]+"_pat_"+newSubTask["patientID"]+"_"+newSubTask["scriptName"]).replace(" ", "_") # add patient id to scriptname to uniquely identify
+        newSubTask["scriptName"]=(filename.split("/")[-1].split(".")[0]+"_pat_"+newSubTask["patientID"]+"_"+newSubTask["scriptName"].strip()).replace(" ", "_") # add patient id to scriptname to uniquely identify
         newSubTask["scriptPath"]=os.path.join(newSubTask["scriptPath"],newSubTask["scriptName"]+".sh") 
         dependencyDict[newSubTask["scriptName"]]=[] # make list for dependency names after splitting 
         
