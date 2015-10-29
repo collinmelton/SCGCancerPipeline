@@ -97,12 +97,12 @@ class Patient():
         # split fastqs
         if runNormals:
 #             print ["$OUTPUTPATH/$PATIENTID.normal", multVarNorm, normalFASTQ1, normalFASTQ2]
-            self.writeJob("split_normal_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M $2 --FQ1 $3 --FQ2 $4",
-                          ["$OUTPUTPATH/$PATIENTID.normal", "'"+multVarNorm+"'", normalFASTQ1, normalFASTQ2], 
+            self.writeJob("split_normal_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M "+multVarNorm+" --FQ1 $2 --FQ2 $3",
+                          ["$OUTPUTPATH/$PATIENTID.normal", normalFASTQ1, normalFASTQ2], 
                           dependencies=newdependencies, multiplicity="")
 #         print ["$OUTPUTPATH/$PATIENTID.cancer", multVarCancer, cancerFASTQ1, cancerFASTQ2]
-        self.writeJob("split_cancer_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M $2 --FQ1 $3 --FQ2 $4",
-                      ["$OUTPUTPATH/$PATIENTID.cancer", "'"+multVarCancer+"'", cancerFASTQ1, cancerFASTQ2], 
+        self.writeJob("split_cancer_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M "+multVarCancer+" --FQ1 $2 --FQ2 $3",
+                      ["$OUTPUTPATH/$PATIENTID.cancer", cancerFASTQ1, cancerFASTQ2], 
                       dependencies=newdependencies, multiplicity="")
         return ["split_cancer_fastq"], ["split_normal_fastq"]
         # align
