@@ -95,24 +95,26 @@ class Patient():
         for fq in [cancerFASTQ1, cancerFASTQ2, normalFASTQ1, normalFASTQ2]:
             if fq[-3:]==".gz": fq = fq[:-3]
         # split fastqs
-        if runNormals:
-#             print ["$OUTPUTPATH/$PATIENTID.normal", multVarNorm, normalFASTQ1, normalFASTQ2]
-            self.writeJob("split_normal_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M '"+multVarNorm+"' --FQ1 $2 --FQ2 $3",
-                          ["$OUTPUTPATH/$PATIENTID.normal", normalFASTQ1, normalFASTQ2], 
-                          dependencies=newdependencies, multiplicity="")
-#         print ["$OUTPUTPATH/$PATIENTID.cancer", multVarCancer, cancerFASTQ1, cancerFASTQ2]
-        self.writeJob("split_cancer_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M '"+multVarCancer+"' --FQ1 $2 --FQ2 $3",
-                      ["$OUTPUTPATH/$PATIENTID.cancer", cancerFASTQ1, cancerFASTQ2], 
-                      dependencies=newdependencies, multiplicity="")
-        return ["split_cancer_fastq"], ["split_normal_fastq"]
+#         if runNormals:
+# #             print ["$OUTPUTPATH/$PATIENTID.normal", multVarNorm, normalFASTQ1, normalFASTQ2]
+#             self.writeJob("split_normal_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M '"+multVarNorm+"' --FQ1 $2 --FQ2 $3",
+#                           ["$OUTPUTPATH/$PATIENTID.normal", normalFASTQ1, normalFASTQ2], 
+#                           dependencies=newdependencies, multiplicity="")
+# #         print ["$OUTPUTPATH/$PATIENTID.cancer", multVarCancer, cancerFASTQ1, cancerFASTQ2]
+#         self.writeJob("split_cancer_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M '"+multVarCancer+"' --FQ1 $2 --FQ2 $3",
+#                       ["$OUTPUTPATH/$PATIENTID.cancer", cancerFASTQ1, cancerFASTQ2], 
+#                       dependencies=newdependencies, multiplicity="")
+#         return ["split_cancer_fastq"], ["split_normal_fastq"]
         # align
         if runNormals:
             self.writeJob("bwa_normal", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
                           ["$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam"], 
-                          dependencies=["split_normal_fastq"], multiplicity=multVarNorm)
+                          dependencies=[], multiplicity=multVarNorm)
+#                           dependencies=["split_normal_fastq"], multiplicity=multVarNorm)
         self.writeJob("bwa_cancer", "150:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
                       ["$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam"], 
-                      dependencies=["split_cancer_fastq"], multiplicity=multVarCancer)
+                      dependencies=[], multiplicity=multVarCancer)
+#                       dependencies=["split_cancer_fastq"], multiplicity=multVarCancer)
         if isPersonalis:
             if runNormals:
                 normalScriptNames=[]
