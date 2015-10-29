@@ -66,6 +66,9 @@ def run():
     multVarNorm = "" #"1|2"
     multVarCancer  = "" #"1|2"
     
+    multVarNorm = "|".join(map(str, range(100))) #"1|2"
+    multVarCancer  = "|".join(map(str, range(100))) #"1|2"
+    
     print "multVarNorm:", multVarNorm
     print "multVarCancer:", multVarCancer
     # run bwa from fastqs and process bam for gatk
