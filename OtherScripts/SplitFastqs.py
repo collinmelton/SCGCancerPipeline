@@ -8,13 +8,13 @@ from optparse import OptionParser ## this is code to help with option parsing
 def getOptions():
     parser = OptionParser()
     parser.add_option("--P", dest = "prefix", help = "",
-                      metavar = "STRING", type = "string", default = "./test/test")
+                      metavar = "STRING", type = "string", default = "./test/test2")
     parser.add_option("--M", dest = "multiplicityVar", help = "",
                       metavar = "STRING", type = "string", default = "1|2|3")
     parser.add_option("--FQ1", dest = "FASTQ1", help = "",
-                      metavar = "FILE", default = "", type = "string")
+                      metavar = "FILE", default = "./test/fastq_test_R1.fastq", type = "string")
     parser.add_option("--FQ2", dest = "FASTQ2", help = "",
-                      metavar = "FILE", default = "", type = "string")
+                      metavar = "FILE", default = "./test/fastq_test_R2.fastq", type = "string")
     parser.add_option("--T", dest = "test", help = "",
                       metavar = "FILE", default = "F", type = "string")
     (options, args) = parser.parse_args()
@@ -73,8 +73,9 @@ def run():
         fastq1, fastq2 = writeTestFastqs()
     else:
         fastq1 = options.FASTQ1
+        print options.FASTQ1, options.FASTQ2
         fastq2 = options.FASTQ2
-        
+    print fastq1, fastq2, filePrefix, multiplicity
     splitFiles(fastq1, fastq2, filePrefix, multiplicity)
 
 
