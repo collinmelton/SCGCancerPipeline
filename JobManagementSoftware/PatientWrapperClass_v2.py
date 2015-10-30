@@ -106,15 +106,15 @@ class Patient():
 #                       dependencies=newdependencies, multiplicity="")
 #         return ["split_cancer_fastq"], ["split_normal_fastq"]
         # align
-        if runNormals:
-            self.writeJob("bwa_normal", "24:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
-                          ["$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam"], 
-                          dependencies=[], multiplicity=multVarNorm)
-#                           dependencies=["split_normal_fastq"], multiplicity=multVarNorm)
-        self.writeJob("bwa_cancer", "24:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
-                      ["$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam"], 
-                      dependencies=[], multiplicity=multVarCancer)
-#                       dependencies=["split_cancer_fastq"], multiplicity=multVarCancer)
+#         if runNormals:
+#             self.writeJob("bwa_normal", "24:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
+#                           ["$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam"], 
+#                           dependencies=[], multiplicity=multVarNorm)
+# #                           dependencies=["split_normal_fastq"], multiplicity=multVarNorm)
+#         self.writeJob("bwa_cancer", "24:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
+#                       ["$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam"], 
+#                       dependencies=[], multiplicity=multVarCancer)
+# #                       dependencies=["split_cancer_fastq"], multiplicity=multVarCancer)
         if isPersonalis:
             if runNormals:
                 normalScriptNames=[]
@@ -142,10 +142,12 @@ class Patient():
             if runNormals:
                 self.writeJob("addReadGroup_normal", "100:00:00", "8", "JAVAPATH -Xmx2g -jar PICARDPATH/AddOrReplaceReadGroups.jar INPUT=$1 OUTPUT=$2 RGID=$3 RGLB=$4 RGPL=$5 RGPU=$6 RGSM=$7 VALIDATION_STRINGENCY=LENIENT",
                           ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.bam","$PATIENTID","$MULTIPLICITYVAR_FORFILE", "Illumina","$PATIENTID","normal"], 
-                          dependencies=["bwa_normal"], multiplicity=multVarNorm)
+                          dependencies=[], multiplicity=multVarNorm)
+#                 dependencies=["bwa_normal"], multiplicity=multVarNorm)
             self.writeJob("addReadGroup_cancer", "100:00:00", "8", "JAVAPATH -Xmx2g -jar PICARDPATH/AddOrReplaceReadGroups.jar INPUT=$1 OUTPUT=$2 RGID=$3 RGLB=$4 RGPL=$5 RGPU=$6 RGSM=$7 VALIDATION_STRINGENCY=LENIENT",
                       ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.bam","$PATIENTID|$MULTIPLICITYVAR_FORFILE","Illumina","$PATIENTID","cancer"], 
-                      dependencies=["bwa_cancer"], multiplicity=multVarCancer)
+                      dependencies=[], multiplicity=multVarCancer)
+#                       dependencies=["bwa_cancer"], multiplicity=multVarCancer)
         
         # sort normal and cancer
         if runNormals:
