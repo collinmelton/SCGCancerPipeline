@@ -230,65 +230,74 @@ class Patient():
     # run local realignment and base recalibration
     def addRealignmentAndRecal(self, previousNormalDep=[], previousCancerDep=[]):
         
-        # split by chromosomes
-        self.writeJob("split_chrom_normal_1", "48:00:00", "14", "SAMTOOLSPATH view $1 $2 -b > $3",
-                      ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam","$MULTIPLICITYVAR","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam"], 
-                      dependencies=previousNormalDep, multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-        self.writeJob("split_chrom_cancer_1", "48:00:00", "14", "SAMTOOLSPATH view $1 $2 -b > $3",
-                      ["$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.bam","$MULTIPLICITYVAR","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam"], 
-                      dependencies=previousCancerDep, multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-         
-        # sort normal and cancer
-        self.writeJob("sort_normal_4", "48:00:00", "14", 
-                      "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
-                      ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
-                      dependencies=["split_chrom_normal_1"],multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-        self.writeJob("sort_cancer_4", "48:00:00", "14", 
-                      "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
-                      ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
-                      dependencies=["split_chrom_cancer_1"],multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-         
-        # index normal and cancer
-        self.writeJob("index_normal_4", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
-                      ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
-                      dependencies=["sort_normal_4"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-        self.writeJob("index_cancer_4", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
-                      ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
-                      dependencies=["sort_cancer_4"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-         
-        # get realign targets
-        self.writeJob("realign_targets", "24:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T RealignerTargetCreator -R REFERENCEPATH -I $1 -I $2 -known G1KVCF -known MILLSINDELS -o $3 -nt 4",
-                      ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.GATKRealignTargets.$MULTIPLICITYVAR_FORFILE.intervals"], 
-                      dependencies=["index_normal_4", "index_cancer_4"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-                 
-        # realign bams
-        self.writeJob("nwayout", "1:00:00", "2", "python /srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/SharedSoftware/OtherScripts/MakeNWayOutFile.py --I $1 --J $2 --K $3 --L $4 --F $5",
-                      ["$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.nwayout.map"], 
-                      dependencies=["realign_targets"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-        self.writeJob("realigner", "150:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T IndelRealigner -R REFERENCEPATH -I $1 -I $2 -known G1KVCF -known MILLSINDELS -targetIntervals $3 -nWayOut $4",
-                      ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.GATKRealignTargets.$MULTIPLICITYVAR_FORFILE.intervals","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.nwayout.map"], 
-                      dependencies=["nwayout"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-
-        # get recalibration data
-        self.writeJob("recal_data_normal", "48:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T BaseRecalibrator -R REFERENCEPATH -I $1 -knownSites DBSNPSITES -knownSites HAPMAPSITES -o $2 -nct 8",
-                      ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp"], 
-                      dependencies=["realigner"],
-#                       dependencies=[], 
-                      multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#         # split by chromosomes
+#         self.writeJob("split_chrom_normal_1", "48:00:00", "14", "SAMTOOLSPATH view $1 $2 -b > $3",
+#                       ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam","$MULTIPLICITYVAR","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam"], 
+#                       dependencies=previousNormalDep, multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#         self.writeJob("split_chrom_cancer_1", "48:00:00", "14", "SAMTOOLSPATH view $1 $2 -b > $3",
+#                       ["$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.bam","$MULTIPLICITYVAR","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam"], 
+#                       dependencies=previousCancerDep, multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#          
+#         # sort normal and cancer
+#         self.writeJob("sort_normal_4", "48:00:00", "14", 
+#                       "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
+#                       ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
+#                       dependencies=["split_chrom_normal_1"],multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#         self.writeJob("sort_cancer_4", "48:00:00", "14", 
+#                       "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
+#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
+#                       dependencies=["split_chrom_cancer_1"],multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#          
+#         # index normal and cancer
+#         self.writeJob("index_normal_4", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
+#                       ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
+#                       dependencies=["sort_normal_4"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#         self.writeJob("index_cancer_4", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
+#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
+#                       dependencies=["sort_cancer_4"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#          
+#         # get realign targets
+#         self.writeJob("realign_targets", "24:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T RealignerTargetCreator -R REFERENCEPATH -I $1 -I $2 -known G1KVCF -known MILLSINDELS -o $3 -nt 4",
+#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.GATKRealignTargets.$MULTIPLICITYVAR_FORFILE.intervals"], 
+#                       dependencies=["index_normal_4", "index_cancer_4"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#                  
+#         # realign bams
+#         self.writeJob("nwayout", "1:00:00", "2", "python /srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/SharedSoftware/OtherScripts/MakeNWayOutFile.py --I $1 --J $2 --K $3 --L $4 --F $5",
+#                       ["$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.nwayout.map"], 
+#                       dependencies=["realign_targets"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#         self.writeJob("realigner", "150:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T IndelRealigner -R REFERENCEPATH -I $1 -I $2 -known G1KVCF -known MILLSINDELS -targetIntervals $3 -nWayOut $4",
+#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.GATKRealignTargets.$MULTIPLICITYVAR_FORFILE.intervals","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.nwayout.map"], 
+#                       dependencies=["nwayout"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+# 
+#         # get recalibration data
+#         self.writeJob("recal_data_normal", "48:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T BaseRecalibrator -R REFERENCEPATH -I $1 -knownSites DBSNPSITES -knownSites HAPMAPSITES -o $2 -nct 8",
+#                       ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp"], 
+#                       dependencies=["realigner"],
+# #                       dependencies=[], 
+#                       multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+# 
+#         self.writeJob("recal_data_cancer", "48:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T BaseRecalibrator -R REFERENCEPATH -I $1 -knownSites DBSNPSITES -knownSites HAPMAPSITES -o $2 -nct 8",
+#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp"], 
+#                       dependencies=["realigner"],
+# #                       dependencies=[], 
+#                       multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
 
         self.writeJob("recal_data_cancer", "48:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T BaseRecalibrator -R REFERENCEPATH -I $1 -knownSites DBSNPSITES -knownSites HAPMAPSITES -o $2 -nct 8",
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp"], 
-                      dependencies=["realigner"],
-#                       dependencies=[], 
-                      multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+                      dependencies=[], 
+                      multiplicity="7 18")
 
         # recalibrate
-        self.writeJob("recal_normal", "100:00:00", "12", "JAVAPATH -Xmx8g -jar GATKPATH -T PrintReads -R REFERENCEPATH -I $1 -BQSR $2 -o $3 -nct 8 -rf BadCigar",
-                      ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recal.bam"], 
-                      dependencies=["recal_data_normal"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#         self.writeJob("recal_normal", "100:00:00", "12", "JAVAPATH -Xmx8g -jar GATKPATH -T PrintReads -R REFERENCEPATH -I $1 -BQSR $2 -o $3 -nct 8 -rf BadCigar",
+#                       ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recal.bam"], 
+#                       dependencies=["recal_data_normal"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+#         self.writeJob("recal_cancer", "100:00:00", "12", "JAVAPATH -Xmx8g -jar GATKPATH -T PrintReads -R REFERENCEPATH -I $1 -BQSR $2 -o $3 -nct 8 -rf BadCigar",
+#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recal.bam"], 
+#                       dependencies=["recal_data_cancer"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+
         self.writeJob("recal_cancer", "100:00:00", "12", "JAVAPATH -Xmx8g -jar GATKPATH -T PrintReads -R REFERENCEPATH -I $1 -BQSR $2 -o $3 -nct 8 -rf BadCigar",
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recal.bam"], 
-                      dependencies=["recal_data_cancer"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+                      dependencies=["recal_data_cancer"], multiplicity="7 18")
 
         # merge bams
         self.writeJob("merge_recal_normal", "48:00:00", "12", "JAVAPATH -Xmx2g -jar PICARDPATH/MergeSamFiles.jar INPUT=$1 INPUT=$2 INPUT=$3 INPUT=$4 INPUT=$5 INPUT=$6 INPUT=$7 INPUT=$8 INPUT=$9 INPUT=${10} INPUT=${11} INPUT=${12} INPUT=${13} OUTPUT=${14} VALIDATION_STRINGENCY=LENIENT USE_THREADING=true",
