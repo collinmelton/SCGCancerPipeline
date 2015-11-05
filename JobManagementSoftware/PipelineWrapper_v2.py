@@ -99,7 +99,7 @@ def run():
 #     
    
     # run local realignment and base recalibration
-    previousNormalDep, previousCancerDep=newPatient.addRealignmentAndRecal(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
+#     previousNormalDep, previousCancerDep=newPatient.addRealignmentAndRecal(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
            
     # find germline snvs, also run on cancer to do quality check on shared snvs
     newPatient.addGermlineSNVsAndQualityCheck(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
