@@ -112,7 +112,7 @@ class Patient():
         self.writeJob("split_cancer_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M '"+multVarCancer+"' --FQ1 $2 --FQ2 $3",
                       ["$OUTPUTPATH/$PATIENTID.cancer", cancerFASTQ1, cancerFASTQ2], 
                       dependencies=newdependencies, multiplicity="")
-        return ["split_cancer_fastq"], ["split_normal_fastq"]
+#         return ["split_cancer_fastq"], ["split_normal_fastq"]
         # align
         if runNormals:
             self.writeJob("bwa_normal", "24:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
