@@ -13,6 +13,7 @@ class Patient():
         self.csvWriter.writerow(["run","notes","patientID","scriptName","outputPath","multiplicity","scriptPath","scriptTime",
                                  "scriptOutputFileDirectory","scriptErrorFileDirectory","scriptCustomizations","scriptMemory","scriptEmailAddress","scriptCommand","inputs", "dependencies"])
         self.emailAddress=emailAddress
+        self.deleteFileCounter = 0
     
     def getMultVars(self, filenames):
         multVarNorm=set([])
@@ -77,6 +78,13 @@ class Patient():
         return ["tofastq_cancer"], ["tofastq_normal"]
      
     # align fastqs using bwa
+    
+    def deleteFile(self, filename, dependencies, multiplicity=""):
+        self.deleteFileCounter+=1
+        self.writeJob("delete_file_"+str(self.deleteFileCounter), "2:00:00", "2", "rm $1",
+              [filename], dependencies=dependencies, multiplicity=multiplicity)
+        return ["delete_file_"+str(self.deleteFileCounter)]
+    
     def addMultipleFASTQs(self, multVarNorm, multVarCancer, 
                           cancerFASTQ1="$OUTPUTPATH/$PATIENTID_R1_$MULTIPLICITYVAR_FORFILE.cancer.fastq", 
                           cancerFASTQ2="$OUTPUTPATH/$PATIENTID_R2_$MULTIPLICITYVAR_FORFILE.cancer.fastq", 
@@ -95,26 +103,33 @@ class Patient():
         for fq in [cancerFASTQ1, cancerFASTQ2, normalFASTQ1, normalFASTQ2]:
             if fq[-3:]==".gz": fq = fq[:-3]
         # split fastqs
-#         if runNormals:
-# #             print ["$OUTPUTPATH/$PATIENTID.normal", multVarNorm, normalFASTQ1, normalFASTQ2]
-#             self.writeJob("split_normal_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M '"+multVarNorm+"' --FQ1 $2 --FQ2 $3",
-#                           ["$OUTPUTPATH/$PATIENTID.normal", normalFASTQ1, normalFASTQ2], 
-#                           dependencies=newdependencies, multiplicity="")
-# #         print ["$OUTPUTPATH/$PATIENTID.cancer", multVarCancer, cancerFASTQ1, cancerFASTQ2]
-#         self.writeJob("split_cancer_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M '"+multVarCancer+"' --FQ1 $2 --FQ2 $3",
-#                       ["$OUTPUTPATH/$PATIENTID.cancer", cancerFASTQ1, cancerFASTQ2], 
-#                       dependencies=newdependencies, multiplicity="")
-#         return ["split_cancer_fastq"], ["split_normal_fastq"]
+        if runNormals:
+#             print ["$OUTPUTPATH/$PATIENTID.normal", multVarNorm, normalFASTQ1, normalFASTQ2]
+            self.writeJob("split_normal_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M '"+multVarNorm+"' --FQ1 $2 --FQ2 $3",
+                          ["$OUTPUTPATH/$PATIENTID.normal", normalFASTQ1, normalFASTQ2], 
+                          dependencies=newdependencies, multiplicity="")
+#         print ["$OUTPUTPATH/$PATIENTID.cancer", multVarCancer, cancerFASTQ1, cancerFASTQ2]
+        self.writeJob("split_cancer_fastq", "48:00:00", "2", "python /srv/gsfs0/clinical/cancerPatientAnno/SCGCancerPipeline/OtherScripts/SplitFastqs.py --P $1 --M '"+multVarCancer+"' --FQ1 $2 --FQ2 $3",
+                      ["$OUTPUTPATH/$PATIENTID.cancer", cancerFASTQ1, cancerFASTQ2], 
+                      dependencies=newdependencies, multiplicity="")
+        return ["split_cancer_fastq"], ["split_normal_fastq"]
         # align
-#         if runNormals:
-#             self.writeJob("bwa_normal", "24:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
-#                           ["$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam"], 
+        if runNormals:
+            self.writeJob("bwa_normal", "24:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
+                          ["$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam"], 
 #                           dependencies=[], multiplicity=multVarNorm)
-# #                           dependencies=["split_normal_fastq"], multiplicity=multVarNorm)
-#         self.writeJob("bwa_cancer", "24:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
-#                       ["$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam"], 
+                        dependencies=["split_normal_fastq"], multiplicity=multVarNorm)
+        self.writeJob("bwa_cancer", "24:00:00", "6", "BWAPATH mem -M REFERENCEPATH $1 $2 -t $3 | SAMTOOLSPATH view -Sbt REFERENCEINDEX -o $4 -",
+                      ["$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R1.fastq", "$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R2.fastq", "1", "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam"], 
 #                       dependencies=[], multiplicity=multVarCancer)
-# #                       dependencies=["split_cancer_fastq"], multiplicity=multVarCancer)
+                    dependencies=["split_cancer_fastq"], multiplicity=multVarCancer)
+        # delete fastqs
+        if runNormals: 
+            self.deleteFile("$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R1.fastq", dependencies=["bwa_normal"], multiplicity=multVarNorm)
+            self.deleteFile("$OUTPUTPATH/$PATIENTID.normal_$MULTIPLICITYVAR_FORFILE_R2.fastq", dependencies=["bwa_normal"], multiplicity=multVarNorm)
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R1.fastq", dependencies=["bwa_cancer"], multiplicity=multVarCancer)
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.cancer_$MULTIPLICITYVAR_FORFILE_R2.fastq", dependencies=["bwa_cancer"], multiplicity=multVarCancer)
+        
         if isPersonalis:
             if runNormals:
                 normalScriptNames=[]
@@ -142,12 +157,17 @@ class Patient():
             if runNormals:
                 self.writeJob("addReadGroup_normal", "100:00:00", "8", "JAVAPATH -Xmx2g -jar PICARDPATH/AddOrReplaceReadGroups.jar INPUT=$1 OUTPUT=$2 RGID=$3 RGLB=$4 RGPL=$5 RGPU=$6 RGSM=$7 VALIDATION_STRINGENCY=LENIENT",
                           ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.bam","$PATIENTID","$MULTIPLICITYVAR_FORFILE", "Illumina","$PATIENTID","normal"], 
-                          dependencies=[], multiplicity=multVarNorm)
-#                 dependencies=["bwa_normal"], multiplicity=multVarNorm)
+#                           dependencies=[], multiplicity=multVarNorm)
+                dependencies=["bwa_normal"], multiplicity=multVarNorm)
             self.writeJob("addReadGroup_cancer", "100:00:00", "8", "JAVAPATH -Xmx2g -jar PICARDPATH/AddOrReplaceReadGroups.jar INPUT=$1 OUTPUT=$2 RGID=$3 RGLB=$4 RGPL=$5 RGPU=$6 RGSM=$7 VALIDATION_STRINGENCY=LENIENT",
                       ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.bam","$PATIENTID|$MULTIPLICITYVAR_FORFILE","Illumina","$PATIENTID","cancer"], 
-                      dependencies=[], multiplicity=multVarCancer)
-#                       dependencies=["bwa_cancer"], multiplicity=multVarCancer)
+#                       dependencies=[], multiplicity=multVarCancer)
+                    dependencies=["bwa_cancer"], multiplicity=multVarCancer)
+        
+        # delete pre-RG bams
+        if runNormals: 
+            self.deleteFile("$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.bam", dependencies=["addReadGroup_normal"], multiplicity=multVarNorm)
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.bam", dependencies=["addReadGroup_cancer"], multiplicity=multVarCancer)
         
         # sort normal and cancer
         if runNormals:
@@ -157,7 +177,12 @@ class Patient():
         self.writeJob("sort_cancer_1", "48:00:00", "14", "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
                       ["$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.sorted.bam"], 
                       dependencies=cancerScriptNames, multiplicity=multVarCancer)
-         
+
+        # delete pre-sorted bams
+        if runNormals: 
+            self.deleteFile("$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.bam", dependencies=["sort_normal_1"], multiplicity=multVarNorm)
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.bam", dependencies=["sort_cancer_1"], multiplicity=multVarCancer)
+
         # index normal and cancer
         if runNormals:
             self.writeJob("index_normal_1", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
@@ -177,6 +202,11 @@ class Patient():
                       "JAVAPATH -Xmx2g -jar PICARDPATH/MergeSamFiles.jar "+" ".join(map(lambda x: "INPUT=${"+str(x+1)+"}", range(len(multVarCancer.split("|")))))+" OUTPUT=${"+str(len(multVarCancer.split("|"))+1)+"} VALIDATION_STRINGENCY=LENIENT USE_THREADING=true  ",
                       ("|".join(map(lambda x: "$OUTPUTPATH/$PATIENTID."+x+".cancer.RG.sorted.bam", multVarCancer.split("|")))+"|$OUTPUTPATH/$PATIENTID.merged.cancer.RG.bam").split("|"), 
                       dependencies=["index_cancer_1"])
+        
+        # delete pre-merged bams
+        if runNormals: 
+            self.deleteFile("$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.normal.RG.sorted.bam", dependencies=["merge_normal_1"], multiplicity=multVarNorm)
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR_FORFILE.cancer.RG.sorted.bam", dependencies=["merge_cancer_1"], multiplicity=multVarCancer)
          
         # sort normal and cancer
         if runNormals:
@@ -188,7 +218,12 @@ class Patient():
                       "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
                       ["$OUTPUTPATH/$PATIENTID.merged.cancer.RG.bam","$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.bam"], 
                       dependencies=["merge_cancer_1"])
-         
+
+        # delete pre-sorted bams
+        if runNormals: 
+            self.deleteFile("$OUTPUTPATH/$PATIENTID.merged.normal.RG.bam", dependencies=["sort_normal_2"], multiplicity="")
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.merged.cancer.RG.bam", dependencies=["sort_cancer_2"], multiplicity="")
+
         # index normal and cancer
         if runNormals:
             self.writeJob("index_normal_2", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
@@ -209,11 +244,16 @@ class Patient():
                       ["$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.bam","$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.bam","$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.metrics.txt"], 
                       dependencies=["index_cancer_2"])        
 
+        # delete pre-dedup bams
+        if runNormals: 
+            self.deleteFile("$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.bam", dependencies=["mark_dup_normal_1"], multiplicity="")
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.bam", dependencies=["mark_dup_cancer_1"], multiplicity="")
+
         # if not run normals tranfer normal file over
         if not runNormals and normalLoc!="":
-            self.writeJob("copyNormal", "12:00:00", "2", "cp $1 > $2",
-                      [normalLoc, "$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.bam"], 
-                      dependencies=[])
+            self.writeJob("copyNormal", "12:00:00", "2", "cp $1 $2",
+                      [normalLoc, "$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam"], 
+                      dependencies=["mark_dup_cancer_1"])
         
         # index normal and cancer
         self.writeJob("index_normal_3", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
@@ -247,6 +287,10 @@ class Patient():
                       "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
                       dependencies=["split_chrom_cancer_1"],multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+        
+        # delete pre-split bams
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam", dependencies=["sort_normal_4"], multiplicity="")
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.bam", dependencies=["sort_cancer_4"], multiplicity="")
           
         # index normal and cancer
         self.writeJob("index_normal_4", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
@@ -255,7 +299,11 @@ class Patient():
         self.writeJob("index_cancer_4", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam"], 
                       dependencies=["sort_cancer_4"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-          
+
+        # delete pre-sorted bams 
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam", dependencies=["index_normal_4"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.bam", dependencies=["index_cancer_4"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+
         # get realign targets
         self.writeJob("realign_targets", "24:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T RealignerTargetCreator -R REFERENCEPATH -I $1 -I $2 -known G1KVCF -known MILLSINDELS -o $3 -nt 4",
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam","$OUTPUTPATH/$PATIENTID.GATKRealignTargets.$MULTIPLICITYVAR_FORFILE.intervals"], 
@@ -273,19 +321,12 @@ class Patient():
         self.writeJob("recal_data_normal", "48:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T BaseRecalibrator -R REFERENCEPATH -I $1 -knownSites DBSNPSITES -knownSites HAPMAPSITES -o $2 -nct 8",
                       ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp"], 
                       dependencies=["realigner"],
-#                       dependencies=[], 
                       multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
  
         self.writeJob("recal_data_cancer", "48:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T BaseRecalibrator -R REFERENCEPATH -I $1 -knownSites DBSNPSITES -knownSites HAPMAPSITES -o $2 -nct 8",
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp"], 
                       dependencies=["realigner"],
-#                       dependencies=[], 
                       multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
-
-#         self.writeJob("recal_data_cancer", "48:00:00", "8", "JAVAPATH -Xmx4g -jar GATKPATH -T BaseRecalibrator -R REFERENCEPATH -I $1 -knownSites DBSNPSITES -knownSites HAPMAPSITES -o $2 -nct 8",
-#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp"], 
-#                       dependencies=[], 
-#                       multiplicity="7 18")
 
         # recalibrate
         self.writeJob("recal_normal", "100:00:00", "12", "JAVAPATH -Xmx8g -jar GATKPATH -T PrintReads -R REFERENCEPATH -I $1 -BQSR $2 -o $3 -nct 8 -rf BadCigar",
@@ -295,10 +336,10 @@ class Patient():
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recal.bam"], 
                       dependencies=["recal_data_cancer"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
  
-#         self.writeJob("recal_cancer", "100:00:00", "12", "JAVAPATH -Xmx8g -jar GATKPATH -T PrintReads -R REFERENCEPATH -I $1 -BQSR $2 -o $3 -nct 8 -rf BadCigar",
-#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recalData.grp","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recal.bam"], 
-#                       dependencies=["recal_data_cancer"], multiplicity="7 18")
-
+        # delete pre-realigned bams 
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam", dependencies=["recal_normal"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.bam", dependencies=["recal_cancer"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+ 
         # merge bams
         self.writeJob("merge_recal_normal", "48:00:00", "12", "JAVAPATH -Xmx2g -jar PICARDPATH/MergeSamFiles.jar INPUT=$1 INPUT=$2 INPUT=$3 INPUT=$4 INPUT=$5 INPUT=$6 INPUT=$7 INPUT=$8 INPUT=$9 INPUT=${10} INPUT=${11} INPUT=${12} INPUT=${13} OUTPUT=${14} VALIDATION_STRINGENCY=LENIENT USE_THREADING=true",
                       ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.1.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.2.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.3_22.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.4_21.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.5_19.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.6_20.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.7_18.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.8_17.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.9_16.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.10_15.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.11_14.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.12_13.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.X_Y_MT.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.bam"], 
@@ -306,6 +347,10 @@ class Patient():
         self.writeJob("merge_recal_cancer", "48:00:00", "12", "JAVAPATH -Xmx2g -jar PICARDPATH/MergeSamFiles.jar INPUT=$1 INPUT=$2 INPUT=$3 INPUT=$4 INPUT=$5 INPUT=$6 INPUT=$7 INPUT=$8 INPUT=$9 INPUT=${10} INPUT=${11} INPUT=${12} INPUT=${13} OUTPUT=${14} VALIDATION_STRINGENCY=LENIENT USE_THREADING=true",
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.1.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.2.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.3_22.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.4_21.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.5_19.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.6_20.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.7_18.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.8_17.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.9_16.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.10_15.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.11_14.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.12_13.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.X_Y_MT.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.bam"], 
                       dependencies=["recal_cancer"])
+
+        # delete pre-recal bams 
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam", dependencies=["merge_recal_normal"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.bam", dependencies=["merge_recal_cancer"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
 
         # sort normal and cancer
         self.writeJob("sort_normal_5", "48:00:00", "14", 
@@ -316,6 +361,10 @@ class Patient():
                       "JAVAPATH -Xms8g -Xmx8g -jar PICARDPATH/SortSam.jar INPUT=$1 OUTPUT=$2 MAX_RECORDS_IN_RAM=$((8*250000)) VALIDATION_STRINGENCY=SILENT SORT_ORDER=coordinate",
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.bam","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam"], 
                       dependencies=["merge_recal_cancer"])
+
+        # delete pre-merge bams 
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recal.bam", dependencies=["sort_normal_5"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.$MULTIPLICITYVAR_FORFILE.sorted.realigned.recal.bam", dependencies=["sort_cancer_5"], multiplicity="1|2|3 22|4 21|5 19|6 20|7 18|8 17|9 16|10 15|11 14|12 13|X Y MT")
         
         # index normal and cancer
         self.writeJob("index_normal_5", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
@@ -325,26 +374,30 @@ class Patient():
                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam"], 
                       dependencies=["sort_cancer_5"])
 
+        # delete pre-sorted bams 
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.bam", dependencies=["index_normal_5"], multiplicity="")
+        self.deleteFile("$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.bam", dependencies=["index_cancer_5"], multiplicity="")
+
         return ["index_normal_5"], ["index_cancer_5"]
         
     # find germline snvs, also run on cancer to do quality check on shared snvs
     def addGermlineSNVsAndQualityCheck(self, previousNormalDep=[], previousCancerDep=[]): 
         # run haplotype caller
-#         self.writeJob("haplotype_caller_normal", "150:00:00", "7", "JAVAPATH -Xmx4g -jar GATKPATH -T HaplotypeCaller -R REFERENCEPATH --dbsnp DBSNPSITES -I $1 -o $2 -nct 4 -L $3",
-#                       ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR.HaplotypeCaller.vcf","$MULTIPLICITYVAR"], 
-#                       dependencies=previousNormalDep, multiplicity="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X")
-#         self.writeJob("haplotype_caller_cancer", "150:00:00", "7", "JAVAPATH -Xmx4g -jar GATKPATH -T HaplotypeCaller -R REFERENCEPATH --dbsnp DBSNPSITES -I $1 -o $2 -nct 4 -L $3",
-#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR.HaplotypeCaller.cancer.vcf","$MULTIPLICITYVAR"], 
-#                       dependencies=previousCancerDep, multiplicity="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X")
-#         # merge unified genotyper results        
-#         self.writeJob("merge_haplotype_caller_normal", "2:00:00", "8", "module add r/3.0.1\\nRscript /srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/SharedSoftware/Annotation/ConcatenateVCFs.R $1 $2 $3",
-#                       ["$OUTPUTPATH","$PATIENTID.*.HaplotypeCaller.vcf","$OUTPUTPATH/$PATIENTID.HaplotypeCaller.vcf"], 
-#                       dependencies=["haplotype_caller_normal"])
-# #                       dependencies=[])
-#         self.writeJob("merge_haplotype_caller_cancer", "2:00:00", "8", "module add r/3.0.1\\nRscript /srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/SharedSoftware/Annotation/ConcatenateVCFs.R $1 $2 $3",
-#                       ["$OUTPUTPATH","$PATIENTID.*.HaplotypeCaller.cancer.vcf","$OUTPUTPATH/$PATIENTID.HaplotypeCaller.cancer.vcf"], 
-# #                       dependencies=[])
-#                     dependencies=["haplotype_caller_cancer"])
+        self.writeJob("haplotype_caller_normal", "150:00:00", "7", "JAVAPATH -Xmx4g -jar GATKPATH -T HaplotypeCaller -R REFERENCEPATH --dbsnp DBSNPSITES -I $1 -o $2 -nct 4 -L $3",
+                      ["$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR.HaplotypeCaller.vcf","$MULTIPLICITYVAR"], 
+                      dependencies=previousNormalDep, multiplicity="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X")
+        self.writeJob("haplotype_caller_cancer", "150:00:00", "7", "JAVAPATH -Xmx4g -jar GATKPATH -T HaplotypeCaller -R REFERENCEPATH --dbsnp DBSNPSITES -I $1 -o $2 -nct 4 -L $3",
+                      ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR.HaplotypeCaller.cancer.vcf","$MULTIPLICITYVAR"], 
+                      dependencies=previousCancerDep, multiplicity="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X")
+        # merge unified genotyper results        
+        self.writeJob("merge_haplotype_caller_normal", "2:00:00", "8", "module add r/3.0.1\\nRscript /srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/SharedSoftware/Annotation/ConcatenateVCFs.R $1 $2 $3",
+                      ["$OUTPUTPATH","$PATIENTID.*.HaplotypeCaller.vcf","$OUTPUTPATH/$PATIENTID.HaplotypeCaller.vcf"], 
+                      dependencies=["haplotype_caller_normal"])
+#                       dependencies=[])
+        self.writeJob("merge_haplotype_caller_cancer", "2:00:00", "8", "module add r/3.0.1\\nRscript /srv/gsfs0/projects/gbsc/Clinical/cancerPatientAnno/SharedSoftware/Annotation/ConcatenateVCFs.R $1 $2 $3",
+                      ["$OUTPUTPATH","$PATIENTID.*.HaplotypeCaller.cancer.vcf","$OUTPUTPATH/$PATIENTID.HaplotypeCaller.cancer.vcf"], 
+#                       dependencies=[])
+                    dependencies=["haplotype_caller_cancer"])
 
 
 # don't recalibrate for single genomes!!!!        
@@ -412,8 +465,8 @@ class Patient():
 #                        "$OUTPUTPATH/$PATIENTID.$MULTIPLICITYVAR.HaplotypeCallerComp.txt"],
                       ["$OUTPUTPATH/$PATIENTID.HaplotypeCaller.cancer.vcf","$OUTPUTPATH/$PATIENTID.HaplotypeCaller.vcf",
                        "$OUTPUTPATH/$PATIENTID.HaplotypeCallerComp.txt"], 
-                      dependencies = [],
-                      #dependencies = ["merge_haplotype_caller_cancer", "merge_haplotype_caller_normal"],
+#                       dependencies = [],
+                    dependencies = ["merge_haplotype_caller_cancer", "merge_haplotype_caller_normal"],
 #                       dependencies=["haplotype_caller_ar_normal_indels", "haplotype_caller_ar_cancer_indels"],
 #                       dependencies=["haplotype_caller_ar_cancer_indels"], 
                       multiplicity="") #"1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X")
@@ -576,32 +629,32 @@ class Patient():
     # find rearrangements and other somatic structural variants
     def addCREST(self, previousNormalDep=[], previousCancerDep=[]):
         
-#         # copy bam index files with new extensions
-#         self.writeJob("rename_bam_index", "4:00:00", "4", 
-#                       "cp $1 $2\\ncp $3 $4",
-#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bai",
-#                        "$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.bai",
-#                        "$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bai",
-#                        "$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.bai"], 
-#                       dependencies=(previousNormalDep+previousCancerDep), multiplicity="")
-#         
-#         # extract sclip
-#         self.writeJob("extract_sclip", "72:00:00", "4", 
-#                       "module add perl-scg\\nmodule add samtools\\nmodule add crest/1.0\\nextractSClip.pl -i $1 --ref_genome $2 -r $3 -o $4",
-#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","REFERENCEPATH","$MULTIPLICITYVAR","$OUTPUTPATH"], 
-#                       dependencies=["rename_bam_index"], multiplicity="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X|Y")
-# 
-#         # concat covers
-#         self.writeJob("concat_cover", "4:00:00", "12", 
-#                       "echo '$1 > $2'\\ncat $1 > $2",
-#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.*.cover","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.cover"], 
-#                       dependencies=["extract_sclip"])
-#         
-#         # run crest
-#         self.writeJob("crest", "72:00:00", "12", 
-#                       "module add cap3/1.0\\nmodule add perl-scg\\nmodule add samtools\\nmodule add crest/1.0\\nmodule add blat\\n/srv/gs1/software/blat/3.5/bin/x86_64/gfServer start localhost 8888 $5 &\\nsleep 240\\nCREST.pl -f $1 -d $2 -g $3 --ref_genome $4 -t $5 -r $6 --blatserver localhost --blatport 8888 -o $7 -p $6",
-#                       ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.cover","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","REFERENCEPATH","REFERENCETWOBIT","$MULTIPLICITYVAR","$OUTPUTPATH"], 
-#                       dependencies=["concat_cover"], multiplicity="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X|Y")
+        # copy bam index files with new extensions
+        self.writeJob("rename_bam_index", "4:00:00", "4", 
+                      "cp $1 $2\\ncp $3 $4",
+                      ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bai",
+                       "$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.bai",
+                       "$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bai",
+                       "$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.bai"], 
+                      dependencies=(previousNormalDep+previousCancerDep), multiplicity="")
+         
+        # extract sclip
+        self.writeJob("extract_sclip", "72:00:00", "4", 
+                      "module add perl-scg\\nmodule add samtools\\nmodule add crest/1.0\\nextractSClip.pl -i $1 --ref_genome $2 -r $3 -o $4",
+                      ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","REFERENCEPATH","$MULTIPLICITYVAR","$OUTPUTPATH"], 
+                      dependencies=["rename_bam_index"], multiplicity="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X|Y")
+ 
+        # concat covers
+        self.writeJob("concat_cover", "4:00:00", "12", 
+                      "echo '$1 > $2'\\ncat $1 > $2",
+                      ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.*.cover","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.cover"], 
+                      dependencies=["extract_sclip"])
+         
+        # run crest
+        self.writeJob("crest", "72:00:00", "12", 
+                      "module add cap3/1.0\\nmodule add perl-scg\\nmodule add samtools\\nmodule add crest/1.0\\nmodule add blat\\n/srv/gs1/software/blat/3.5/bin/x86_64/gfServer start localhost 8888 $5 &\\nsleep 240\\nCREST.pl -f $1 -d $2 -g $3 --ref_genome $4 -t $5 -r $6 --blatserver localhost --blatport 8888 -o $7 -p $6",
+                      ["$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam.cover","$OUTPUTPATH/$PATIENTID.cancer.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","$OUTPUTPATH/$PATIENTID.normal.RG.sorted.dedup.merged.sorted.realigned.recal.sorted.bam","REFERENCEPATH","REFERENCETWOBIT","$MULTIPLICITYVAR","$OUTPUTPATH"], 
+                      dependencies=["concat_cover"], multiplicity="1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|X|Y")
         
         # combine crest results
         self.writeJob("concat_crest_results", "4:00:00", "4", 

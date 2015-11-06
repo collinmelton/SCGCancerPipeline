@@ -89,17 +89,17 @@ def run():
     
     # convert fastq to bam
     previousNormalDep, previousCancerDep=[],[]
-#     previousNormalDep, previousCancerDep=newPatient.addMultipleFASTQs(multVarNorm, multVarCancer, cancerFASTQ1=cancerFASTQ1, 
-#                                                                       cancerFASTQ2=cancerFASTQ2, normalFASTQ1=normalFASTQ1, 
-#                                                                       normalFASTQ2=normalFASTQ2, isPersonalis=False, 
-#                                                                       dependencies=previousNormalDep+previousCancerDep, 
-#                                                                       runNormals=(options.runNormals=="T"), normalLoc=options.normalLoc)
+    previousNormalDep, previousCancerDep=newPatient.addMultipleFASTQs(multVarNorm, multVarCancer, cancerFASTQ1=cancerFASTQ1, 
+                                                                      cancerFASTQ2=cancerFASTQ2, normalFASTQ1=normalFASTQ1, 
+                                                                      normalFASTQ2=normalFASTQ2, isPersonalis=False, 
+                                                                      dependencies=previousNormalDep+previousCancerDep, 
+                                                                      runNormals=(options.runNormals=="T"), normalLoc=options.normalLoc)
     
 #     # start here if data come aligned
 #     
    
     # run local realignment and base recalibration
-#     previousNormalDep, previousCancerDep=newPatient.addRealignmentAndRecal(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
+    previousNormalDep, previousCancerDep=newPatient.addRealignmentAndRecal(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
            
     # find germline snvs, also run on cancer to do quality check on shared snvs
     newPatient.addGermlineSNVsAndQualityCheck(previousNormalDep=previousNormalDep, previousCancerDep=previousCancerDep)
