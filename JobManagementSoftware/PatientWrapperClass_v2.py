@@ -256,9 +256,14 @@ class Patient():
                       dependencies=["mark_dup_cancer_1"])
         
         # index normal and cancer
-        self.writeJob("index_normal_3", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
-                      ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam"], 
-                      dependencies=["mark_dup_normal_1"])
+        if runNormals:
+            self.writeJob("index_normal_3", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
+                          ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam"], 
+                          dependencies=["mark_dup_normal_1"])
+        else:
+            self.writeJob("index_normal_3", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
+                          ["$OUTPUTPATH/$PATIENTID.merged.normal.RG.sorted.dedup.bam"], 
+                          dependencies=["copyNormal"])
         self.writeJob("index_cancer_3", "48:00:00", "14", "JAVAPATH -Xmx4g -jar PICARDPATH/BuildBamIndex.jar INPUT=$1 VALIDATION_STRINGENCY=LENIENT",
                       ["$OUTPUTPATH/$PATIENTID.merged.cancer.RG.sorted.dedup.bam"], 
                       dependencies=["mark_dup_cancer_1"])
