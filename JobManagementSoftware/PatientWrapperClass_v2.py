@@ -100,8 +100,12 @@ class Patient():
             if fastq[-3:]==".gz": # or ".gz" in fastq:
                 self.writeJob("unzip_"+fastq.split("/")[-1].split(".")[0], "6:00:00", "4", "gunzip -c $1 > $2", [fastq, fastq[:-3]], dependencies=dependencies)
                 newdependencies.append("unzip_"+fastq.split("/")[-1].split(".")[0])
-        for fq in [cancerFASTQ1, cancerFASTQ2, normalFASTQ1, normalFASTQ2]:
-            if fq[-3:]==".gz": fq = fq[:-3]
+#         for fq in [cancerFASTQ1, cancerFASTQ2, normalFASTQ1, normalFASTQ2]:
+#             if fq[-3:]==".gz": fq = fq[:-3]
+        if cancerFASTQ1[-3:]==".gz":cancerFASTQ1=cancerFASTQ1[:-3]
+        if cancerFASTQ2[-3:]==".gz":cancerFASTQ2=cancerFASTQ2[:-3]
+        if normalFASTQ1[-3:]==".gz":normalFASTQ1=normalFASTQ1[:-3]
+        if normalFASTQ2[-3:]==".gz":normalFASTQ2=normalFASTQ2[:-3] 
         # split fastqs
         if runNormals:
 #             print ["$OUTPUTPATH/$PATIENTID.normal", multVarNorm, normalFASTQ1, normalFASTQ2]
